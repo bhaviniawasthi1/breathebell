@@ -1,0 +1,18 @@
+# build output and local deploy settings (contain personal email and account details)
+.aws-sam/
+samconfig.toml
+
+# python
+__pycache__/
+*.pyc
+
+# editors and OS
+.idea/
+.vscode/
+.DS_Store
+
+# secrets
+.env
+.env.*
+*.pem
+*.key

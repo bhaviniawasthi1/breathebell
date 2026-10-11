@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: BreatheBell - school air quality decision tool
+
+Parameters:
+  AlertEmail:
+    Type: String
+    Description: Email address that receives alerts
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 25
+    MemorySize: 256
+    CodeUri: src/
+    Environment:
+      Variables:
+        SCHOOLS_TABLE: !Ref SchoolsTable
+        HISTORY_TABLE: !Ref HistoryTable
+        TOPIC_ARN: !Ref AlertTopic
+
+Resources:
+  SchoolsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  HistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: school_id
+          AttributeType: S
+        - AttributeName: ts
+          AttributeType: N
+      KeySchema:
+        - AttributeName: school_id
+          KeyType: HASH
+        - AttributeName: ts
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expires
+        Enabled: true
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlertEmail
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - "*"
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.api_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SchoolsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HistoryTable
+      Events:
+        CreateSchool:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /schools
+            Method: POST
+        ListSchools:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /schools
+            Method: GET
+        Overview:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /overview
+            Method: GET
+        SchoolStatus:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /schools/{id}/status
+            Method: GET
+        SchoolHistory:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /schools/{id}/history
+            Method: GET
+
+  CheckerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.scheduled_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SchoolsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HistoryTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt AlertTopic.TopicName
+      Events:
+        Hourly:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)
+
+  DigestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.digest_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref SchoolsTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt AlertTopic.TopicName
+      Events:
+        EveryMorning:
+          Type: Schedule
+          Properties:
+            Description: Daily digest at 07:00 IST (01:30 UTC)
+            Schedule: cron(30 1 * * ? *)
+
+Outputs:
+  ApiUrl:
+    Description: API base URL
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
