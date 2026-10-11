@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BreatheBell</title>
+<meta name="description" content="BreatheBell tells every school whether children can play outside today, class by class.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board:#17302b; --board2:#214039; --chalk:#eef3ef; --chalk-dim:#a9bdb5;
+  --brass:#d9a441; --brass-d:#8a6212; --frame:#a97c2f;
+  --paper:#f3f5f3; --card:#ffffff; --ink:#16211e; --muted:#58696a; --line:#d8e0dc;
+  --yes:#1e8e4e; --lim:#b86a00; --ind:#c5282f;
+  --yes-t:#e2f2e8; --lim-t:#fbecd0; --ind-t:#f9dddf;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.muted{color:var(--muted)}
+[hidden]{display:none!important}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:20px;padding:12px 24px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:1.35rem;letter-spacing:-.01em}
+.brand svg{width:28px;height:28px;fill:var(--brass-d)}
+.tabs{display:flex;gap:4px;margin-left:12px}
+.tab{background:none;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:500;color:var(--muted)}
+.tab[aria-selected="true"]{color:var(--ink);box-shadow:inset 0 -3px 0 var(--brass)}
+.tab:hover{color:var(--ink)}
+.spacer{flex:1}
+.btn{border:1px solid var(--ink);background:var(--ink);color:#fff;padding:9px 16px;border-radius:6px;cursor:pointer;font-weight:600}
+.btn:hover{background:#2a3a36}
+.btn.alt{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn.alt:hover{border-color:var(--ink)}
+.btn.small{padding:6px 12px;font-size:.9rem}
+.btn.danger{color:var(--ind);border-color:var(--line);background:#fff}
+.btn.danger:hover{border-color:var(--ind)}
+
+main{max-width:1080px;margin:0 auto;padding:24px 20px 64px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.toolbar label{display:flex;align-items:center;gap:8px;font-weight:600}
+select,input{border:1px solid var(--line);background:#fff;border-radius:6px;padding:9px 11px;min-width:0}
+select{min-width:240px;max-width:100%}
+
+/* chalkboard hero */
+.hero{background:var(--board);color:var(--chalk);border:7px solid var(--frame);border-radius:10px;padding:28px 28px 26px;display:grid;grid-template-columns:1.3fr 1fr;gap:32px;box-shadow:inset 0 0 60px rgba(0,0,0,.28)}
+.hero .where{color:var(--chalk-dim);margin:0 0 10px}
+.verdict{font-size:clamp(2rem,4.6vw,3.5rem);font-weight:700;letter-spacing:-.02em;margin:0 0 18px}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:999px;color:#fff;font-weight:600;font-size:.95rem;white-space:nowrap}
+.pill i{font-style:normal;font-size:1em}
+.pill.yes{background:var(--yes)} .pill.lim{background:var(--lim)} .pill.ind{background:var(--ind)}
+.metrics{display:flex;flex-wrap:wrap;gap:6px 26px;margin:0 0 20px;color:var(--chalk-dim)}
+.metrics b{font-family:var(--display);color:var(--chalk);font-size:1.5rem;margin-right:5px}
+.advice{margin:0;padding:0;list-style:none;display:grid;gap:7px}
+.advice li{padding-left:22px;position:relative}
+.advice li::before{content:"";position:absolute;left:3px;top:.62em;width:8px;height:8px;border-radius:50%;background:var(--brass)}
+.reg h2{font-size:1.15rem;margin-bottom:12px;font-weight:700;color:var(--chalk)}
+.reg ul{list-style:none;margin:0;padding:0}
+.reg li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:11px 0;border-top:1px dashed rgba(238,243,239,.28)}
+.reg li:first-child{border-top:0}
+.reg .nm{font-weight:600}
+.reg .sub{grid-column:1/2;font-size:.85rem;color:var(--chalk-dim)}
+.reg .pill{grid-row:1/3;grid-column:2;align-self:center}
+
+.best{margin-top:14px;border-left:5px solid var(--brass);background:#fff;padding:14px 18px;border-radius:0 8px 8px 0;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.best b{font-family:var(--display);font-size:1.25rem}
+
+.sec{margin-top:34px}
+.sec>h2{font-size:1.4rem;margin-bottom:4px;font-weight:700}
+.sec>p.lead{margin:0 0 14px;color:var(--muted);max-width:62ch}
+
+/* bell schedule */
+.bell{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px}
+.bellrow{display:grid;grid-template-columns:92px 1fr;gap:10px;align-items:center;margin-bottom:10px}
+.bellrow:last-of-type{margin-bottom:0}
+.dlab{font-weight:600}
+.cells{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+.cell{border-radius:5px;padding:5px 4px 6px;text-align:center;line-height:1.2;border:2px solid transparent;min-width:0}
+.cell .h{display:block;font-size:.72rem;color:var(--muted)}
+.cell b{font-family:var(--display);font-size:1.05rem}
+.cell i{font-style:normal;font-size:.75rem;margin-left:2px}
+.cell.yes{background:var(--yes-t)} .cell.yes i{color:var(--yes)}
+.cell.lim{background:var(--lim-t)} .cell.lim i{color:var(--lim)}
+.cell.ind{background:var(--ind-t)} .cell.ind i{color:var(--ind)}
+.cell.off{background:#f0f2f1;color:#9aa6a2}
+.cell.best{border-color:var(--brass-d);box-shadow:0 0 0 2px var(--brass)}
+.key{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;font-size:.88rem;color:var(--muted)}
+.key span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+
+/* chart */
+.chartbox{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 14px 12px}
+.chartwrap{position:relative}
+.chartwrap svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.band{fill:#eef3f0}
+.bw{fill:rgba(217,164,65,.28);stroke:var(--brass-d);stroke-width:1.5}
+.bwlab{font-size:11px;font-weight:600;fill:var(--brass-d)}
+.grid{stroke:#e4eae7;stroke-width:1}
+.ylab,.xlab{font-size:11px;fill:var(--muted)}
+.thr{stroke:#7a8a85;stroke-width:1;stroke-dasharray:4 4}
+.thrlab{font-size:11px;fill:#4c5d58}
+.ln{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.xh{stroke:var(--ink);stroke-width:1;stroke-dasharray:3 3}
+.dot{fill:var(--ink);stroke:#fff;stroke-width:2}
+.tip{position:absolute;top:0;pointer-events:none;background:var(--ink);color:#fff;border-radius:6px;padding:8px 11px;font-size:.88rem;line-height:1.35;white-space:nowrap;transform:translate(-50%,-4px)}
+.tip .pill{margin-top:5px;font-size:.8rem;padding:2px 9px}
+details{margin-top:12px}
+summary{cursor:pointer;color:var(--muted);font-weight:500}
+table{border-collapse:collapse;width:100%;font-size:.9rem;margin-top:8px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.tscroll{max-height:280px;overflow:auto}
+
+/* impact + circular */
+.duo{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:8px;padding:20px}
+.panel h3{font-size:1.1rem;margin-bottom:10px}
+.big{font-family:var(--display);font-size:clamp(2.4rem,6vw,3.6rem);font-weight:700;line-height:1;letter-spacing:-.02em}
+.panel p{margin:10px 0 0;color:var(--muted)}
+.panel .btn{margin-top:14px}
+
+/* district */
+.stats{display:flex;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:22px}
+.stat{flex:1 1 150px;padding:16px 20px;border-left:1px solid var(--line)}
+.stat:first-child{border-left:0}
+.stat b{display:block;font-family:var(--display);font-size:1.9rem;line-height:1.1}
+.stat span{color:var(--muted);font-size:.9rem}
+.dist{background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:16px;overflow:hidden}
+.disthead{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);background:#fafbfa}
+.disthead h3{font-size:1.15rem;margin-right:auto;text-transform:capitalize}
+.srow{display:grid;grid-template-columns:30px minmax(120px,1.2fr) 2fr auto;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:11px 18px;cursor:pointer}
+.srow:last-child{border-bottom:0}
+.srow:hover{background:#f7f9f8}
+.rank{color:var(--muted);font-weight:600}
+.sname b{display:block}
+.sname span{font-size:.85rem;color:var(--muted)}
+.barwrap{height:10px;background:#edf1ef;border-radius:5px;position:relative}
+.bar{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.bar.yes{background:var(--yes)} .bar.lim{background:var(--lim)} .bar.ind{background:var(--ind)}
+.pmv{font-weight:600;font-size:.9rem;color:var(--muted);margin-top:3px}
+
+/* states */
+.empty,.error{background:#fff;border:1px dashed #b9c6c1;border-radius:8px;padding:40px 24px;text-align:center}
+.empty h2{margin-bottom:8px}
+.error{border-color:var(--ind);color:var(--ind);text-align:left}
+.skel{border-radius:10px;background:linear-gradient(90deg,#e5ebe8,#f3f6f4,#e5ebe8);background-size:200% 100%;animation:sh 1.4s linear infinite;height:220px}
+@keyframes sh{to{background-position:-200% 0}}
+
+/* dialog */
+dialog{border:0;border-radius:10px;padding:0;width:min(560px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(10,25,22,.55)}
+.dlg{padding:24px}
+.dlg h2{font-size:1.4rem;margin-bottom:4px}
+.dlg .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dlg label{display:block;font-weight:600;font-size:.92rem;margin-top:14px}
+.dlg label small{font-weight:400;color:var(--muted)}
+.dlg input{width:100%;margin-top:5px}
+.dlg fieldset{border:1px solid var(--line);border-radius:8px;margin:18px 0 0;padding:4px 14px 16px}
+.dlg legend{font-weight:600;padding:0 6px}
+.dlg .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.formerr{color:var(--ind);margin-top:12px;font-weight:500}
+
+#circular{display:none}
+
+@media (max-width:820px){
+  .hero{grid-template-columns:1fr;padding:22px 18px}
+  .duo{grid-template-columns:1fr}
+  .top{padding:10px 14px;gap:10px}
+  .tabs{margin-left:0}
+  .brand span{display:none}
+  .srow{grid-template-columns:24px 1fr auto;}
+  .srow .barwrap{grid-column:2/4;grid-row:2}
+  .cells{grid-template-columns:repeat(4,1fr)}
+  .bellrow{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+
+@media print{
+  @page{size:A4;margin:11mm}
+  html,body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .top,main,dialog{display:none!important}
+  #circular{display:block;font-family:"Instrument Sans",system-ui,"Segoe UI",Arial,sans-serif;color:#16211e;font-size:10.5pt;line-height:1.4;height:272mm;position:relative;break-inside:avoid;page-break-after:avoid;overflow:hidden}
+  #circular *{box-sizing:border-box}
+  .c-head{background:#17302b;color:#eef3ef;padding:16px 20px 14px;border-bottom:6px solid #d9a441;display:flex;justify-content:space-between;align-items:flex-end;gap:14px}
+  .c-head .tag{font-size:9pt;color:#a9bdb5;margin-bottom:4px}
+  .c-head .sch{font-family:"Bricolage Grotesque",Georgia,serif;font-size:21pt;font-weight:700;line-height:1.1}
+  .c-head .meta{text-align:right;font-size:9.5pt;color:#cfdcd6;white-space:nowrap}
+  .c-head .brand{font-family:"Bricolage Grotesque",Georgia,serif;font-weight:700;font-size:11pt;color:#d9a441;margin-bottom:3px}
+  .c-verdict{margin:16px 0 14px;padding:14px 18px;border:2px solid var(--vc);border-left-width:14px;background:var(--vt);display:flex;justify-content:space-between;align-items:center;gap:16px;border-radius:4px}
+  .c-verdict .q{font-size:9.5pt;color:#44564f}
+  .c-verdict .w{font-family:"Bricolage Grotesque",Georgia,serif;font-size:25pt;font-weight:700;line-height:1.1;color:var(--vc)}
+  .c-verdict .r{text-align:right;font-size:9.5pt;color:#44564f;white-space:nowrap}
+  .c-verdict .r b{font-size:15pt;color:#16211e;font-family:"Bricolage Grotesque",Georgia,serif}
+  .c-h{font-family:"Bricolage Grotesque",Georgia,serif;font-size:12pt;font-weight:700;margin:16px 0 8px}
+  .c-groups{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .c-groups.three{grid-template-columns:repeat(3,1fr)}
+  .c-g{border:1px solid #cdd8d3;border-top:5px solid var(--gc);border-radius:4px;padding:9px 10px 10px;background:#fff}
+  .c-g .n{font-weight:600;font-size:10pt;line-height:1.25}
+  .c-g .s{font-size:8.8pt;color:#58696a;margin:2px 0 7px}
+  .c-g .d{display:inline-block;background:var(--gc);color:#fff;font-weight:600;font-size:9.5pt;padding:2px 10px;border-radius:99px}
+  .c-two{display:grid;grid-template-columns:1fr 1.25fr;gap:14px;margin-top:2px}
+  .c-box{border:1px solid #cdd8d3;border-radius:4px;padding:12px 14px}
+  .c-box .big{font-family:"Bricolage Grotesque",Georgia,serif;font-size:18pt;font-weight:700;line-height:1.15}
+  .c-box .sm{font-size:9.5pt;color:#58696a;margin-top:3px}
+  .c-box.brass{border-left:6px solid #d9a441}
+  .c-box ul{margin:0;padding-left:16px}
+  .c-box li{margin:3px 0}
+  .c-sign{position:absolute;left:0;right:0;bottom:22mm;display:flex;justify-content:space-between;gap:40px;padding:0 6px}
+  .c-sign div{flex:1;border-top:1px solid #16211e;padding-top:4px;font-size:9.5pt;text-align:center}
+  .c-foot{position:absolute;left:0;right:0;bottom:0;border-top:1px solid #cdd8d3;padding-top:7px;font-size:8.3pt;color:#58696a}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a1.6 1.6 0 0 1 1.6 1.6v.45A6.2 6.2 0 0 1 18.2 10.6v3.1l1.7 2.5a.9.9 0 0 1-.75 1.4H4.85a.9.9 0 0 1-.75-1.4l1.7-2.5v-3.1a6.2 6.2 0 0 1 4.6-6.05V4.1A1.6 1.6 0 0 1 12 2.5z"/><path d="M9.6 19.2a2.4 2.4 0 0 0 4.8 0z"/></svg>
+    <span>BreatheBell</span>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="tabSchool" aria-selected="true">School</button>
+    <button class="tab" role="tab" id="tabDistrict" aria-selected="false">District</button>
+  </nav>
+  <div class="spacer"></div>
+  <button class="btn" id="openAdd">Add school</button>
+</header>
+
+<main>
+  <section id="viewSchool" aria-labelledby="tabSchool">
+    <div class="toolbar" id="toolbar" hidden>
+      <label for="schoolSel">School
+        <select id="schoolSel"></select>
+      </label>
+      <button class="btn alt small" id="refresh">Refresh</button>
+    </div>
+    <div id="schoolBody"></div>
+  </section>
+  <section id="viewDistrict" aria-labelledby="tabDistrict" hidden>
+    <div id="districtBody"></div>
+  </section>
+</main>
+
+<dialog id="addDlg">
+  <form class="dlg" id="addForm" novalidate>
+    <h2>Add a school</h2>
+    <p class="muted" style="margin:4px 0 0">Enter a city or locality. For an exact location, you can also add latitude and longitude.</p>
+    <label>School name
+      <input id="fName" required maxlength="80" autocomplete="off" placeholder="e.g. Delhi Public School">
+    </label>
+    <div class="row">
+      <label>City or locality
+        <input id="fCity" maxlength="80" autocomplete="off" placeholder="e.g. Mesra, Ranchi">
+      </label>
+      <label>District <small>(optional)</small>
+        <input id="fDistrict" maxlength="80" autocomplete="off" placeholder="e.g. Ranchi">
+      </label>
+    </div>
+    <div class="row">
+      <label>Latitude <small>(optional)</small>
+        <input id="fLat" type="number" step="any" placeholder="23.41">
+      </label>
+      <label>Longitude <small>(optional)</small>
+        <input id="fLon" type="number" step="any" placeholder="85.44">
+      </label>
+    </div>
+    <fieldset>
+      <legend>Number of students</legend>
+      <div class="row">
+        <label>Primary (Class 1-5)<input id="fPri" type="number" min="0" value="0"></label>
+        <label>Middle (Class 6-8)<input id="fMid" type="number" min="0" value="0"></label>
+        <label>Senior (Class 9-12)<input id="fSen" type="number" min="0" value="0"></label>
+        <label>With asthma or allergy<input id="fSens" type="number" min="0" value="0"></label>
+      </div>
+    </fieldset>
+    <div class="formerr" id="formErr" role="alert"></div>
+    <div class="actions">
+      <button type="button" class="btn alt" id="cancelAdd">Cancel</button>
+      <button type="submit" class="btn" id="saveAdd">Add school</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="circular" aria-hidden="true"></div>
+
+<script>
+const API = "https://cj41yio5l9.execute-api.ap-south-1.amazonaws.com"; // trailing slash mat lagana
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const DEC = {
+  YES:     {word: "Allowed",    icon: "✓", cls: "yes"},
+  LIMITED: {word: "Limited", icon: "◐", cls: "lim"},
+  INDOOR:  {word: "Indoor",  icon: "✕", cls: "ind"}
+};
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const nf = new Intl.NumberFormat("en-IN");
+
+let schools = [], currentId = null, current = null, token = 0, view = "school";
+
+function store(k, v) {
+  try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {}
+  return null;
+}
+async function api(path, opts) {
+  let r;
+  try { r = await fetch(API + path, opts); }
+  catch (e) { throw new Error("Could not reach the server. Check your internet and try again."); }
+  let d = {};
+  try { d = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error(d.error || ("Something went wrong (code " + r.status + ")"));
+  return d;
+}
+const pill = d => `<span class="pill ${DEC[d].cls}"><i aria-hidden="true">${DEC[d].icon}</i>${DEC[d].word}</span>`;
+const fmtDate = d => (+d.slice(8, 10)) + " " + MONTHS[+d.slice(5, 7) - 1];
+const fmtTime = t => fmtDate(t) + ", " + t.slice(11, 16);
+function dayLabel(d, today) {
+  const diff = Math.round((Date.parse(d + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 864e5);
+  return diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : fmtDate(d);
+}
+
+/* ---------- school list ---------- */
+async function loadSchools(selectId) {
+  try {
+    schools = await api("/schools");
+  } catch (e) {
+    $("toolbar").hidden = true;
+    $("schoolBody").innerHTML = `<div class="error"><b>Could not load the school list.</b><br>${esc(e.message)}<br><br><button class="btn small" id="retryList">Try again</button></div>`;
+    $("retryList").onclick = () => loadSchools(selectId);
+    return;
+  }
+  schools.sort((a, b) => a.name.localeCompare(b.name));
+  if (!schools.length) {
+    $("toolbar").hidden = true;
+    current = null; currentId = null;
+    $("schoolBody").innerHTML = `<div class="empty"><h2>No schools yet</h2><p class="muted">Add your first school. We will tell you which classes can play outside today.</p><button class="btn" id="emptyAdd">Add school</button></div>`;
+    $("emptyAdd").onclick = openAdd;
+    return;
+  }
+  $("toolbar").hidden = false;
+  $("schoolSel").innerHTML = schools.map(s => `<option value="${esc(s.id)}">${esc(s.name)} · ${esc(s.place)}</option>`).join("");
+  const wanted = selectId || store("bb_school");
+  currentId = schools.some(s => s.id === wanted) ? wanted : schools[0].id;
+  $("schoolSel").value = currentId;
+  loadStatus(currentId);
+}
+
+async function loadStatus(id) {
+  const my = ++token;
+  store("bb_school", id);
+  $("schoolBody").innerHTML = `<div class="skel" role="status" aria-label="Loading air quality data"></div>`;
+  try {
+    const s = await api("/schools/" + encodeURIComponent(id) + "/status");
+    if (my !== token) return;
+    current = s;
+    renderSchool(s);
+  } catch (e) {
+    if (my !== token) return;
+    $("schoolBody").innerHTML = `<div class="error"><b>Could not load data for this school.</b><br>${esc(e.message)}<br><br><button class="btn small" id="retryStatus">Try again</button></div>`;
+    $("retryStatus").onclick = () => loadStatus(id);
+  }
+}
+
+/* ---------- school view ---------- */
+function bellStrip(s) {
+  const today = s.time.slice(0, 10);
+  const by = {};
+  s.forecast.forEach(x => {
+    const h = +x.t.slice(11, 13);
+    if (h >= 8 && h < 16) (by[x.t.slice(0, 10)] = by[x.t.slice(0, 10)] || {})[h] = x;
+  });
+  const bw = s.best_window;
+  const rows = Object.keys(by).sort().map(d => {
+    let cells = "";
+    for (let h = 8; h < 16; h++) {
+      const x = by[d][h];
+      if (!x) { cells += `<div class="cell off"><span class="h">${h}:00</span><b>–</b></div>`; continue; }
+      const isBest = bw && bw.date === d && h >= bw.start && h < bw.end;
+      cells += `<div class="cell ${DEC[x.decision].cls}${isBest ? " best" : ""}" title="${esc(DEC[x.decision].word)}: PM2.5 ${x.pm25}"><span class="h">${h}:00</span><b>${Math.round(x.pm25)}</b><i aria-hidden="true">${DEC[x.decision].icon}</i><span class="sr" style="position:absolute;left:-9999px">${esc(DEC[x.decision].word)}</span></div>`;
+    }
+    return `<div class="bellrow"><div class="dlab">${esc(dayLabel(d, today))}</div><div class="cells">${cells}</div></div>`;
+  }).join("");
+  return `<div class="bell">${rows || "<p class='muted'>The school-hours forecast is not available yet.</p>"}
+    <div class="key">
+      <span><i class="sw" style="background:var(--yes-t);border:1px solid var(--yes)"></i>✓ Allowed</span>
+      <span><i class="sw" style="background:var(--lim-t);border:1px solid var(--lim)"></i>◐ Limited</span>
+      <span><i class="sw" style="background:var(--ind-t);border:1px solid var(--ind)"></i>✕ Indoor</span>
+      <span><i class="sw" style="border:2px solid var(--brass-d);box-shadow:0 0 0 1px var(--brass)"></i>Best slot</span>
+      <span>Number = PM2.5 (µg/m³)</span>
+    </div></div>`;
+}
+
+function niceStep(raw) {
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+}
+
+function buildChart(s) {
+  const f = s.forecast, n = f.length;
+  if (n < 2) return {html: "<p class='muted'>Forecast is not available yet.</p>", bind() {}};
+  const W = 720, H = 260, L = 40, R = 12, T = 16, B = 32;
+  const today = s.time.slice(0, 10);
+  const regs = s.groups.filter(g => g.group !== "sensitive");
+  const strict = regs.slice().sort((a, b) => a.yes_max - b.yes_max)[0];
+  const maxV = Math.max(20, ...f.map(x => x.pm25), strict ? strict.limited_max : 0) * 1.08;
+  const step = niceStep(maxV / 4);
+  const top = step * Math.ceil(maxV / step);
+  const X = i => L + i * (W - L - R) / (n - 1);
+  const Y = v => T + (H - T - B) * (1 - v / top);
+  let g = "";
+  f.forEach((x, i) => {
+    const h = +x.t.slice(11, 13);
+    if (h >= 8 && h < 16 && i < n - 1) g += `<rect class="band" x="${X(i).toFixed(1)}" y="${T}" width="${(X(i + 1) - X(i)).toFixed(1)}" height="${H - T - B}"/>`;
+  });
+  const bw = s.best_window;
+  if (bw) {
+    const idx = [];
+    f.forEach((x, i) => { const h = +x.t.slice(11, 13); if (x.t.slice(0, 10) === bw.date && h >= bw.start && h < bw.end) idx.push(i); });
+    if (idx.length) {
+      const a = idx[0], b = Math.min(idx[idx.length - 1] + 1, n - 1);
+      g += `<rect class="bw" x="${X(a).toFixed(1)}" y="${T}" width="${(X(b) - X(a)).toFixed(1)}" height="${H - T - B}" rx="3"/>`;
+      const mid = (X(a) + X(b)) / 2, nearEnd = mid > W - R - 48;
+      g += `<text class="bwlab" x="${(nearEnd ? X(b) : mid).toFixed(1)}" y="${T + 13}" text-anchor="${nearEnd ? "end" : "middle"}">Best slot</text>`;
+    }
+  }
+  for (let v = 0; v <= top + 1e-9; v += step) {
+    g += `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="ylab" x="${L - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${v}</text>`;
+  }
+  if (strict) {
+    [[strict.yes_max, "Allowed"], [strict.limited_max, "Limited"]].forEach(([v, w]) => {
+      if (v <= top) g += `<line class="thr" x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="thrlab" x="${W - R - 3}" y="${(Y(v) - 4).toFixed(1)}" text-anchor="end">${esc(strict.name.split(" ")[0])}: ${w} ≤ ${v}</text>`;
+    });
+  }
+  f.forEach((x, i) => {
+    const hh = +x.t.slice(11, 13);
+    if (hh % 6 === 0) {
+      const lab = hh === 0 ? dayLabel(x.t.slice(0, 10), today) : hh + ":00";
+      g += `<text class="xlab" x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${esc(lab)}</text>`;
+    }
+  });
+  g += `<path class="ln" d="${f.map((x, i) => (i ? "L" : "M") + X(i).toFixed(1) + "," + Y(x.pm25).toFixed(1)).join(" ")}"/>`;
+  g += `<line class="xh" id="xh" y1="${T}" y2="${H - B}" visibility="hidden"/><circle class="dot" id="xd" r="5" visibility="hidden"/>`;
+  g += `<rect id="hit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent"/>`;
+  const min = Math.min(...f.map(x => x.pm25)), max = Math.max(...f.map(x => x.pm25));
+  const html = `<div class="chartwrap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="PM2.5 forecast for the next 48 hours, between ${min} and ${max} micrograms per cubic metre. Hover or touch for hourly values."><title>PM2.5 forecast, next 48 hours</title>${g}</svg><div class="tip" id="tip" hidden></div></div>
+    <div class="key"><span><i class="sw" style="background:#eef3f0;border:1px solid #cfd9d4"></i>School hours (8 to 4)</span><span><i class="sw" style="background:rgba(217,164,65,.4);border:1px solid var(--brass-d)"></i>Best slot</span><span><i class="sw" style="height:0;border-top:2px dashed #7a8a85;border-radius:0;margin-top:2px"></i>Decision limit</span><span>PM2.5 in µg/m³</span></div>`;
+  function bind(root) {
+    const svg = root.querySelector("svg"), tip = root.querySelector("#tip");
+    const xh = root.querySelector("#xh"), xd = root.querySelector("#xd");
+    function show(e) {
+      const r = svg.getBoundingClientRect();
+      const vx = (e.clientX - r.left) * W / r.width;
+      let i = Math.round((vx - L) / ((W - L - R) / (n - 1)));
+      i = Math.max(0, Math.min(n - 1, i));
+      const x = f[i];
+      xh.setAttribute("x1", X(i)); xh.setAttribute("x2", X(i)); xh.setAttribute("visibility", "visible");
+      xd.setAttribute("cx", X(i)); xd.setAttribute("cy", Y(x.pm25)); xd.setAttribute("visibility", "visible");
+      tip.innerHTML = `<b>${esc(dayLabel(x.t.slice(0, 10), today))} ${esc(x.t.slice(11, 16))}</b><br>PM2.5 ${x.pm25} · AQI ${x.aqi == null ? "–" : x.aqi}<br>${pill(x.decision)}`;
+      tip.hidden = false;
+      const px = X(i) / W * r.width;
+      tip.style.left = Math.max(70, Math.min(r.width - 70, px)) + "px";
+      tip.style.top = Math.max(0, Y(x.pm25) / H * r.height - 90) + "px";
+    }
+    function hide() { tip.hidden = true; xh.setAttribute("visibility", "hidden"); xd.setAttribute("visibility", "hidden"); }
+    svg.addEventListener("pointermove", show);
+    svg.addEventListener("pointerdown", show);
+    svg.addEventListener("pointerleave", hide);
+  }
+  return {html, bind};
+}
+
+function renderSchool(s) {
+  const d = DEC[s.decision];
+  const bw = s.best_window;
+  const today = s.time.slice(0, 10);
+  const groups = s.groups.map(g => `<li><span class="nm">${esc(g.name)}</span>${pill(g.decision)}<span class="sub">${nf.format(g.students)} students · Allowed ≤ ${g.yes_max} · Limited ≤ ${g.limited_max}</span></li>`).join("");
+  const advice = s.advice.map(a => `<li>${esc(a)}</li>`).join("");
+  const rows = s.forecast.slice(0, 48).map(x => `<tr><td>${esc(dayLabel(x.t.slice(0, 10), today))} ${esc(x.t.slice(11, 16))}</td><td>${x.pm25}</td><td>${x.aqi == null ? "–" : x.aqi}</td><td>${esc(DEC[x.decision].icon + " " + DEC[x.decision].word)}</td></tr>`).join("");
+  const chart = buildChart(s);
+  const im = s.impact;
+
+  $("schoolBody").innerHTML = `
+    <section class="hero" aria-label="Today's decision">
+      <div>
+        <p class="where">${esc(s.school)} · ${esc(s.place)} · ${esc(fmtTime(s.time))}</p>
+        <h1 class="verdict">${esc(s.headline)}</h1>
+        <div class="metrics" style="align-items:center">
+          ${pill(s.decision)}
+          <span><b>${s.pm25}</b>PM2.5 µg/m³</span>
+          <span><b>${s.aqi}</b>AQI (${esc(s.level.replace("_", " ").toLowerCase())})</span>
+        </div>
+        <ul class="advice">${advice}</ul>
+      </div>
+      <div class="reg">
+        <h2>Class-wise decision</h2>
+        <ul>${groups}</ul>
+      </div>
+    </section>
+    ${bw ? `<div class="best"><b>Cleanest slot: ${esc(dayLabel(bw.date, today))} ${esc(bw.label)}</b><span>PM2.5 around ${bw.avg_pm25}</span>${pill(bw.decision)}</div>` : `<div class="best"><b>School hours are over for today.</b><span>Tomorrow's slot will update in the morning.</span></div>`}
+
+    <section class="sec">
+      <h2>Bell schedule</h2>
+      <p class="lead">The decision for every school hour. The slot with the gold border is the cleanest.</p>
+      ${bellStrip(s)}
+    </section>
+
+    <section class="sec">
+      <h2>Next 48 hours</h2>
+      <p class="lead">Hover over or touch the chart to see the PM2.5 and decision for each hour.</p>
+      <div class="chartbox" id="chartbox">${chart.html}
+        <details><summary>Hour-by-hour table</summary><div class="tscroll"><table><thead><tr><th>Time</th><th>PM2.5</th><th>AQI</th><th>Decision</th></tr></thead><tbody>${rows}</tbody></table></div></details>
+      </div>
+    </section>
+
+    <section class="sec duo">
+      <div class="panel">
+        <h3>Impact estimate</h3>
+        <div class="big">${nf.format(im.student_hours)}</div>
+        <p>student-hours of outdoor exposure avoided over the next 48 hours of school time, if the school follows this advice.</p>
+        <p style="font-size:.88rem">${nf.format(im.students)} students × ${im.school_hours} school hours. Indoor hours count in full and Limited hours count as half. This is an estimate.</p>
+      </div>
+      <div class="panel">
+        <h3>Circular for parents</h3>
+        <p style="margin-top:0">Today's decision as a one-page circular. Use the print dialog to save it as a PDF.</p>
+        <button class="btn" id="circBtn">Create circular</button>
+      </div>
+    </section>`;
+  chart.bind($("chartbox"));
+  $("circBtn").onclick = () => printCircular(s);
+}
+
+/* ---------- circular ---------- */
+const EN_ADVICE = {
+  YES: ["PE, sports and assembly may be held outdoors.", "Teachers should keep an eye on children with asthma or allergies."],
+  LIMITED: ["Keep outdoor activity light and under 30 minutes.", "Move heavy sports such as running and football indoors.", "Children with asthma or allergies should stay indoors."],
+  INDOOR: ["Hold sports, PE and assembly indoors.", "Keep windows closed and take breaks inside the classroom.", "Children who must go outside are advised to wear masks."]
+};
+const EN_WORD = {YES: "Outdoor activity allowed", LIMITED: "Limited outdoor activity", INDOOR: "Indoor activity only"};
+function printCircular(s) {
+  const today = s.time.slice(0, 10);
+  const adv = EN_ADVICE[s.decision].slice();
+  if (s.pm25 >= 150) adv.push("Air quality is very poor. The school may consider online classes.");
+  const bw = s.best_window;
+  const COL = {YES: ["#1e8e4e", "#e2f2e8"], LIMITED: ["#b86a00", "#fbecd0"], INDOOR: ["#c5282f", "#f9dddf"]};
+  const GW = {YES: "Allowed", LIMITED: "Limited", INDOOR: "Indoor only"};
+  const [vc, vt] = COL[s.decision];
+  const three = s.groups.length <= 3 ? " three" : "";
+  $("circular").innerHTML = `
+    <div class="c-head">
+      <div>
+        <div class="tag">Outdoor activity advisory</div>
+        <div class="sch">${esc(s.school)}</div>
+      </div>
+      <div class="meta"><div class="brand">BreatheBell</div>${esc(s.place)}<br>${esc(fmtDate(today))}</div>
+    </div>
+    <div class="c-verdict" style="--vc:${vc};--vt:${vt}">
+      <div>
+        <div class="q">Decision for today</div>
+        <div class="w">${esc(EN_WORD[s.decision])}</div>
+      </div>
+      <div class="r"><b>PM2.5 ${s.pm25}</b> µg/m³<br>AQI ${s.aqi} · read ${esc(fmtTime(s.time))}</div>
+    </div>
+    <div class="c-h">Class-wise decision</div>
+    <div class="c-groups${three}">${s.groups.map(g => `<div class="c-g" style="--gc:${COL[g.decision][0]}"><div class="n">${esc(g.name)}</div><div class="s">${nf.format(g.students)} students</div><span class="d">${GW[g.decision]}</span></div>`).join("")}</div>
+    <div class="c-h">Plan for the day</div>
+    <div class="c-two">
+      <div class="c-box brass">
+        <div class="sm" style="margin:0 0 4px">Cleanest outdoor slot</div>
+        ${bw ? `<div class="big">${esc(dayLabel(bw.date, today))}, ${esc(bw.label)}</div><div class="sm">PM2.5 around ${bw.avg_pm25} µg/m³</div>` : `<div class="big">No clean slot left today</div><div class="sm">Tomorrow's slot will be updated in the morning.</div>`}
+      </div>
+      <div class="c-box"><ul>${adv.map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>
+    </div>
+    <div class="c-sign"><div>Class teacher</div><div>Principal</div></div>
+    <div class="c-foot">Air quality data: Open-Meteo (modelled estimate for the school's location, not an on-site sensor). Decision limits adapted from CPCB and WHO PM2.5 guidance, stricter for younger and sensitive children. Issued through BreatheBell.</div>`;
+  window.print();
+}
+
+/* ---------- district view ---------- */
+async function loadDistrict() {
+  $("districtBody").innerHTML = `<div class="skel" role="status" aria-label="Loading district data"></div>`;
+  try {
+    const o = await api("/overview");
+    if (view !== "district") return;
+    renderDistrict(o);
+  } catch (e) {
+    $("districtBody").innerHTML = `<div class="error"><b>Could not load the district view.</b><br>${esc(e.message)}<br><br><button class="btn small" id="retryDist">Try again</button></div>`;
+    $("retryDist").onclick = loadDistrict;
+  }
+}
+function renderDistrict(o) {
+  const t = o.totals;
+  if (!t.schools) {
+    $("districtBody").innerHTML = `<div class="empty"><h2>No schools yet</h2><p class="muted">Add schools to see the district ranking here.</p><button class="btn" id="distAdd">Add school</button></div>`;
+    $("distAdd").onclick = openAdd;
+    return;
+  }
+  const maxPm = Math.max(10, ...o.schools.map(x => x.pm25));
+  const stats = `<div class="stats">
+    <div class="stat"><b>${t.schools}</b><span>schools</span></div>
+    <div class="stat"><b>${nf.format(t.students)}</b><span>students</span></div>
+    <div class="stat"><b>${t.indoor}</b><span>schools indoor today</span></div>
+    <div class="stat"><b>${nf.format(t.student_hours)}</b><span>student-hours protected (48h estimate)</span></div>
+  </div>`;
+  const dists = o.districts.map(d => `<section class="dist">
+    <div class="disthead"><h3>${esc(d.district)}</h3><span class="muted">${d.school_count} school${d.school_count > 1 ? "s" : ""} · avg PM2.5 ${d.avg_pm25}</span>${pill(d.worst_decision)}</div>
+    ${d.schools.map((x, i) => `<button class="srow" data-id="${esc(x.id)}">
+      <span class="rank">${i + 1}</span>
+      <span class="sname"><b>${esc(x.school)}</b><span>${esc(x.place)} · ${nf.format(x.students)} students</span></span>
+      <span><span class="barwrap"><span class="bar ${DEC[x.decision].cls}" style="width:${Math.max(3, Math.round(x.pm25 / maxPm * 100))}%"></span></span><span class="pmv">PM2.5 ${x.pm25}</span></span>
+      ${pill(x.decision)}
+    </button>`).join("")}
+  </section>`).join("");
+  $("districtBody").innerHTML = stats + dists + (t.unavailable ? `<p class="muted">${t.unavailable} school(s) could not be loaded right now.</p>` : "") + `<p class="muted" style="font-size:.88rem">${esc(o.assumption || "")}</p>`;
+}
+
+/* ---------- tabs ---------- */
+function setView(v) {
+  view = v;
+  $("viewSchool").hidden = v !== "school";
+  $("viewDistrict").hidden = v !== "district";
+  $("tabSchool").setAttribute("aria-selected", v === "school");
+  $("tabDistrict").setAttribute("aria-selected", v === "district");
+  if (v === "district") loadDistrict();
+}
+$("tabSchool").onclick = () => setView("school");
+$("tabDistrict").onclick = () => setView("district");
+$("districtBody").addEventListener("click", e => {
+  const b = e.target.closest("[data-id]");
+  if (!b) return;
+  setView("school");
+  currentId = b.dataset.id;
+  if (schools.some(s => s.id === currentId)) $("schoolSel").value = currentId;
+  loadStatus(currentId);
+});
+$("schoolSel").onchange = e => { currentId = e.target.value; loadStatus(currentId); };
+$("refresh").onclick = () => currentId && loadStatus(currentId);
+
+/* ---------- add school ---------- */
+const dlg = $("addDlg");
+function openAdd() { $("formErr").textContent = ""; dlg.showModal(); $("fName").focus(); }
+$("openAdd").onclick = openAdd;
+$("cancelAdd").onclick = () => dlg.close();
+$("addForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = $("formErr"); err.textContent = "";
+  const body = {
+    name: $("fName").value.trim(), city: $("fCity").value.trim(), district: $("fDistrict").value.trim(),
+    lat: $("fLat").value, lon: $("fLon").value,
+    primary: $("fPri").value, middle: $("fMid").value, senior: $("fSen").value, sensitive: $("fSens").value
+  };
+  if (!body.name) { err.textContent = "Enter the school name."; return; }
+  if (!body.city && (body.lat === "" || body.lon === "")) { err.textContent = "Enter a city or locality, or both latitude and longitude."; return; }
+  if ((+body.primary || 0) + (+body.middle || 0) + (+body.senior || 0) <= 0) { err.textContent = "Enter the number of students for at least one class group."; return; }
+  const btn = $("saveAdd"); btn.disabled = true; btn.textContent = "Adding...";
+  try {
+    const r = await api("/schools", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    dlg.close();
+    $("addForm").reset();
+    setView("school");
+    loadSchools(r.id);
+  } catch (ex) { err.textContent = ex.message; }
+  finally { btn.disabled = false; btn.textContent = "Add school"; }
+});
+
+loadSchools();
+</script>
+</body>
+</html>
